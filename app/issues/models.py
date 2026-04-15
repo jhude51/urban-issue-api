@@ -5,7 +5,7 @@ class Issue(models.Model):
         ('vendor', 'Vendor'),
         ('citizen', 'Citizen'),
     ]
-    title = models.CharField(max_length=255)
+    title = models.CharField(max_length=255, blank=False)
     description = models.TextField()
     location = models.CharField(max_length=255)
     reporter = models.CharField(max_length=20, choices=REPORTER_CHOICES, default='citizen')
