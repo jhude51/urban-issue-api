@@ -1,0 +1,51 @@
+name: Django CI Pipeline
+
+on:
+    push:
+        branches: [ "main" ]
+    pull_request:
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        services:
+            postgres:
+                image: postgres:15
+                env:
+                    POSTGRES_DB: urban_issue_db
+                    POSTGRES_USER: dayo
+                    POSTGRES_PASSWORD: S3M0V!T@
+                ports:
+                    - 5432:5432
+                options: >-
+                    --health-cmd="pg_isready U dayo -h localhost -p 5432"
+                    --health_interval=10s
+                    --health_timeout=5s
+                    --health_retries=5
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                python-version: '3.11'
+
+            - name: Install dependencies
+              run: |
+                pip install -r requirements.txt
+
+            - name: Run migrations
+              env:
+                DB_NAME: urban_issue_db
+                DB_USER: dayo
+                DB_PASSWORD: S3M0V!T@
+                DB_HOST: localhost
+                DB_PORT: 5432
+              run: |
+                python app/manage.py migrate
+
+            - name: Run tests (placeholder)
+              run: echo "No tests defined yet"
