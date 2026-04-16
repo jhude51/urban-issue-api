@@ -47,5 +47,22 @@ jobs:
               run: |
                 python app/manage.py migrate
 
-            - name: Run tests (placeholder)
-              run: echo "No tests defined yet"
+            - name: Run Django tests
+              env:
+                DB_NAME: urban_issue_db
+                DB_USER: dayo
+                DB_PASSWORD: S3M0V!T@
+                DB_HOST: localhost
+                DB_PORT: 5432
+              run: |
+                python app/manage.py check
+
+            - name: Run tests
+              env:
+                    DB_NAME: urban_issue_db
+                    DB_USER: dayo
+                    DB_PASSWORD: S3M0V!T@
+                    DB_HOST: localhost
+                    DB_PORT: 5432
+                run: |
+                    python app/manage.py test
