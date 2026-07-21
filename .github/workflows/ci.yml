@@ -9,13 +9,20 @@ jobs:
     build:
         runs-on: ubuntu-latest
 
+        env:
+            DB_NAME: ${{ secrets.POSTGRES_DB }}
+            DB_USER: ${{ secrets.POSTGRES_USER }}
+            DB_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+            DB_HOST: localhost
+            DB_PORT: 5432
+
         services:
             postgres:
                 image: postgres:15
                 env:
-                    POSTGRES_DB: urban_issue_db
-                    POSTGRES_USER: dayo
-                    POSTGRES_PASSWORD: S3M0V!T@
+                    POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+                    POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+                    POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
                 ports:
                     - 5432:5432
                 options: >-
@@ -33,36 +40,31 @@ jobs:
               with:
                 python-version: '3.12'
 
+            - name: Cache dependencies
+              uses: actions/cache@v4
+              with:
+                path: ~/.cache/pip
+                key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+
             - name: Install dependencies
               run: |
                 pip install -r requirements.txt
 
+            - name: Wait for PostgreSQL
+              run: |
+                until pg_isready -h localhost -p 5432 -U $DB_USER; do
+                  echo "Waiting for database...";
+                  sleep 2
+                done
+
             - name: Run migrations
-              env:
-                DB_NAME: urban_issue_db
-                DB_USER: dayo
-                DB_PASSWORD: S3M0V!T@
-                DB_HOST: localhost
-                DB_PORT: 5432
               run: |
                 python app/manage.py migrate
 
-            - name: Run Django tests
-              env:
-                DB_NAME: urban_issue_db
-                DB_USER: dayo
-                DB_PASSWORD: S3M0V!T@
-                DB_HOST: localhost
-                DB_PORT: 5432
+            - name: Run Django system checks
               run: |
                 python app/manage.py check
 
             - name: Run tests
-              env:
-                    DB_NAME: urban_issue_db
-                    DB_USER: dayo
-                    DB_PASSWORD: S3M0V!T@
-                    DB_HOST: localhost
-                    DB_PORT: 5432
-                run: |
-                    python app/manage.py test
+              run: |
+                python app/manage.py test
