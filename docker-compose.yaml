@@ -20,7 +20,7 @@ services:
         sleep 1;
       done;
       python app/manage.py migrate && 
-      gunicorn app.core.wsgi:application --bind 0.0.0.0:8000
+      gunicorn --chdir app core.wsgi:application --bind 0.0.0.0:8000
       "
     ports:
       - "8000:8000"
