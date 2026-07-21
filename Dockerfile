@@ -18,8 +18,7 @@ COPY --from=builder /root/.local /root/.local
 COPY . .
 
 ENV PATH=/root/.local/bin:$PATH
-ENV PYTHONPATH=/app
 
 EXPOSE 8000
 
-CMD ["gunicorn", "app.core.wsgi:application", "--bind", "0.0.0.0:8000"]
+CMD ["gunicorn", "--chdir", "app", "core.wsgi:application", "--bind", "0.0.0.0:8000"]
