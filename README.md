@@ -1,225 +1,1127 @@
 # Urban Issue Reporting API
 
-A production-oriented backend API for reporting and managing urban infrastructure issues.  
-Built with Django REST Framework, PostgreSQL, and environment-based configuration.
+[![Django CI Pipeline](https://github.com/jhude51/urban-issue-api/actions/workflows/ci.yml/badge.svg)](https://github.com/jhude51/urban-issue-api/actions/workflows/ci.yml)
+
+A production-oriented REST API for reporting and managing urban infrastructure issues.
+
+The project is built with Django REST Framework, PostgreSQL, Docker, Gunicorn, and GitHub Actions. It serves as a practical backend and DevOps portfolio project focused on building, containerising, testing, securing, and eventually deploying a real-world API.
 
 ---
 
-## Overview
+## Project Status
 
-This project is designed to simulate a real-world backend system that allows users to:
+**Active development**
 
-- Report urban issues (e.g. potholes, broken infrastructure)
-- Retrieve reported issues via API
-- Validate incoming data properly
-- Persist data in a production-grade database (PostgreSQL)
+The API foundation and production baseline are complete. The current version supports creating and retrieving urban issue reports, while additional issue-management features are planned.
+
+Completed foundation:
+
+- Django REST API
+- PostgreSQL integration
+- Docker and Docker Compose
+- Gunicorn application server
+- Environment-based configuration
+- PostgreSQL health-aware startup
+- Automated migrations, system checks, and tests
+- Docker image validation in GitHub Actions
+- Configurable production security settings
+
+The project has not yet been deployed to Azure.
 
 ---
 
-## Tech Stack
+## Problem Statement
 
-- **Backend:** Django, Django REST Framework  
-- **Database:** PostgreSQL  
-- **Configuration Management:** python-decouple  
-- **Language:** Python  
+Urban infrastructure issues such as potholes, broken traffic lights, damaged roads, drainage problems, and faulty public facilities are often reported through informal or fragmented channels.
+
+This can make it difficult to:
+
+- Store reports in a consistent format
+- Validate the information being submitted
+- Track when issues were reported
+- Organise reports for further action
+- Build automated workflows around issue resolution
+- Analyse infrastructure problems over time
+
+The Urban Issue Reporting API provides the backend foundation for a system where citizens, vendors, and other stakeholders can submit structured issue reports.
+
+The long-term goal is to evolve the project into a cloud-hosted platform that supports issue tracking, categorisation, prioritisation, resolution workflows, automation, and operational reporting.
 
 ---
 
-## Features Implemented
+## Why I Built This Project
 
-- REST API (GET, POST)
-- Data validation using serializers
-- PostgreSQL integration (production-like setup)
-- Environment variable-based configuration
-- Django ORM for database interaction
-- Admin interface for data management
+I started this project as part of my transition from IT support and infrastructure operations into DevOps and cloud engineering.
+
+My professional experience has largely involved troubleshooting endpoints, infrastructure, identity platforms, operating systems, networks, and production support issues. I wanted a project that would help me move beyond maintaining existing systems and gain practical experience building and operating an application across its full lifecycle.
+
+This project allows me to apply:
+
+- Python and Django backend development
+- Linux and command-line troubleshooting
+- PostgreSQL administration
+- Docker containerisation
+- CI pipeline development
+- Environment and secret management
+- Application server configuration
+- Deployment security assessment
+- Root-cause analysis
+- Technical documentation
+
+Rather than treating the API as a one-time coding exercise, I am developing it as an evolving production-oriented system.
+
+---
+
+## Current Features
+
+### API functionality
+
+- Create a new urban issue report
+- Retrieve all submitted issues
+- Return issues in reverse chronological order
+- Validate submitted data using Django REST Framework serializers
+- Store issue reports in PostgreSQL
+- Manage records through the Django admin interface
+
+### Issue data model
+
+Each issue currently contains:
+
+- `id`
+- `title`
+- `description`
+- `location`
+- `reporter`
+- `created_at`
+
+Supported reporter types:
+
+- `citizen`
+- `vendor`
+
+### Application and DevOps foundation
+
+- Environment-based Django configuration
+- PostgreSQL database service
+- Multi-stage Docker image
+- Docker Compose orchestration
+- PostgreSQL health checks
+- Gunicorn production application server
+- Automated database migrations during container startup
+- GitHub Actions CI pipeline
+- Automated Django system checks
+- Automated tests
+- Automated Docker image build validation
+- Configurable HTTPS, cookie, and HSTS settings
+
+---
+
+## Architecture
+
+### Application request flow
+
+```text
+Client
+  |
+  | HTTP request
+  v
+Django REST Framework API
+  |
+  | Serializer validation
+  v
+Django ORM
+  |
+  | SQL queries
+  v
+PostgreSQL
+```
+
+### Container architecture
+
+```text
+Docker Compose
+  |
+  +-- django_app
+  |     |
+  |     +-- Django REST Framework
+  |     +-- Gunicorn
+  |     +-- Database migrations
+  |
+  +-- postgres_db
+        |
+        +-- PostgreSQL 15
+        +-- Persistent named volume
+        +-- Database health check
+```
+
+The Django container waits until PostgreSQL reports a healthy state before migrations and Gunicorn are started.
+
+### CI workflow
+
+```text
+Push to main / Pull request
+              |
+              v
+        GitHub Actions
+              |
+              +-- Check out source code
+              +-- Set up Python 3.12
+              +-- Restore pip dependency cache
+              +-- Install dependencies
+              +-- Start PostgreSQL service
+              +-- Wait for database readiness
+              +-- Apply migrations
+              +-- Run Django system checks
+              +-- Run automated tests
+              +-- Build Docker image
+```
+
+---
+
+## Technology Stack
+
+| Area | Technology |
+|---|---|
+| Language | Python 3.12 |
+| Web framework | Django |
+| API framework | Django REST Framework |
+| Database | PostgreSQL 15 |
+| ORM | Django ORM |
+| Configuration | python-decouple |
+| Application server | Gunicorn |
+| Containerisation | Docker |
+| Local orchestration | Docker Compose |
+| Continuous integration | GitHub Actions |
+| Version control | Git and GitHub |
 
 ---
 
 ## Project Structure
-```
+
+```text
 urban-issue-api/
-|
+├── .github/
+│   └── workflows/
+│       └── ci.yml
 ├── app/
-│ ├── core/
-│ ├── issues/
-│ └── manage.py
-│
-├── .env
+│   ├── core/
+│   │   ├── settings.py
+│   │   ├── urls.py
+│   │   ├── asgi.py
+│   │   └── wsgi.py
+│   ├── issues/
+│   │   ├── migrations/
+│   │   ├── admin.py
+│   │   ├── apps.py
+│   │   ├── models.py
+│   │   ├── serializers.py
+│   │   ├── tests.py
+│   │   └── views.py
+│   └── manage.py
+├── .dockerignore
+├── .env.example
+├── .gitignore
+├── docker-compose.yaml
+├── Dockerfile
 ├── requirements.txt
-├── README.md
+└── README.md
 ```
+
 ---
 
-## Getting Started
+## Quick Start with Docker
+
+Docker Compose is the recommended way to run the complete application locally.
 
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/urban-issue-api.git
+git clone https://github.com/jhude51/urban-issue-api.git
 cd urban-issue-api
 ```
+
+### 2. Create your environment file
+
+```bash
+cp .env.example .env
+```
+
+Replace the placeholder values in `.env`.
+
+For Docker Compose, ensure the database host is set to the Compose service name:
+
+```env
+DB_HOST=db
+```
+
+Generate a local Django secret key with:
+
+```bash
+python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+```
+
+Copy the generated value into:
+
+```env
+SECRET_KEY=your_generated_secret_key
+```
+
+A development Docker configuration should contain values similar to:
+
+```env
+SECRET_KEY=your_generated_secret_key
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+
+DB_NAME=urban_issue_db
+DB_USER=dayo
+DB_PASSWORD=replace_with_a_database_password
+DB_HOST=db
+DB_PORT=5432
+
+POSTGRES_DB=urban_issue_db
+POSTGRES_USER=dayo
+POSTGRES_PASSWORD=replace_with_a_database_password
+
+SECURE_SSL_REDIRECT=False
+SESSION_COOKIE_SECURE=False
+CSRF_COOKIE_SECURE=False
+SECURE_HSTS_SECONDS=0
+SECURE_HSTS_INCLUDE_SUBDOMAINS=False
+SECURE_HSTS_PRELOAD=False
+```
+
+The Django `DB_*` values and PostgreSQL `POSTGRES_*` values must describe the same database credentials.
+
+### 3. Build and start the services
+
+```bash
+docker compose up --build
+```
+
+Docker Compose will:
+
+1. Start PostgreSQL
+2. Wait until PostgreSQL reports a healthy state
+3. Start the Django container
+4. Apply database migrations
+5. Start Gunicorn on port `8000`
+
+### 4. Test the API
+
+```bash
+curl -i http://localhost:8000/issues/
+```
+
+A new database should return an empty list:
+
+```json
+[]
+```
+
+### 5. Check container status
+
+```bash
+docker compose ps
+```
+
+The PostgreSQL service should be healthy and the Django service should be running.
+
+### 6. Stop the services
+
+```bash
+docker compose down
+```
+
+The PostgreSQL data is stored in a named Docker volume and will remain available after the containers are stopped.
+
+To also delete the development database volume:
+
+```bash
+docker compose down -v
+```
+
+> This permanently removes the PostgreSQL data stored by the Compose project.
+
 ---
 
-### 2. Create virtual environment
+## Local Development Without Docker
+
+A local PostgreSQL server is required when running the Django application outside Docker.
+
+### 1. Create a virtual environment
+
+Linux, macOS, or WSL:
+
 ```bash
+python -m venv venv
+source venv/bin/activate
+```
+
+Windows Command Prompt:
+
+```bat
 python -m venv venv
 venv\Scripts\activate
 ```
----
 
-### 3. Install dependencies
+Windows PowerShell:
+
+```powershell
+python -m venv venv
+venv\Scripts\Activate.ps1
+```
+
+### 2. Install dependencies
+
 ```bash
-pip install -r requirements.txt
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 ```
----
 
-### 4. Setup PostgreSQL
-```sql
-CREATE DATABASE urban_issue_db;
-CREATE USER dayo WITH PASSWORD 'yourpassword';
-ALTER ROLE dayo SET client_encoding TO 'utf8';
-ALTER ROLE dayo SET default_transaction_isolation TO 'read committed';
-ALTER ROLE dayo SET timezone TO 'UTC';
-ALTER DATABASE urban_issue_db OWNER TO dayo;
-```
-Grant required permissions:
-```sql
-GRANT ALL PRIVILEGES ON DATABASE urban_issue_db TO dayo;
-```
----
+### 3. Configure the environment
 
-### 5. Configure environment variables
-```.env
-DB_NAME=urban_issue_db
-DB_USER=dayo
-DB_PASSWORD=yourpassword
+Copy the example file:
+
+```bash
+cp .env.example .env
+```
+
+For a PostgreSQL server running directly on your machine, use:
+
+```env
 DB_HOST=localhost
-DB_PORT=5432
 ```
+
+Create the database and database user using values that match the environment file.
+
+### 4. Apply migrations
+
+```bash
+python app/manage.py migrate
+```
+
+### 5. Run the development server
+
+```bash
+python app/manage.py runserver
+```
+
+The API will be available at:
+
+```text
+http://localhost:8000/issues/
+```
+
 ---
 
-### 6. Apply migrations
-```bash
-python manage.py makemigrations
-python manage.py migrate
-```
----
+## Environment Variables
 
-### 7. Apply migrations
-```bash
-python manage.py runserver
-```
+### Django and database configuration
+
+| Variable | Purpose | Local example |
+|---|---|---|
+| `SECRET_KEY` | Django cryptographic signing secret | Generated private value |
+| `DEBUG` | Enables or disables Django debugging | `True` |
+| `ALLOWED_HOSTS` | Comma-separated accepted hostnames | `localhost,127.0.0.1` |
+| `DB_NAME` | Database used by Django | `urban_issue_db` |
+| `DB_USER` | Database user used by Django | `dayo` |
+| `DB_PASSWORD` | Database password used by Django | Private value |
+| `DB_HOST` | PostgreSQL hostname | `db` in Compose, `localhost` outside Docker |
+| `DB_PORT` | PostgreSQL port | `5432` |
+| `POSTGRES_DB` | Database created by the PostgreSQL image | `urban_issue_db` |
+| `POSTGRES_USER` | User created by the PostgreSQL image | `dayo` |
+| `POSTGRES_PASSWORD` | Password assigned by the PostgreSQL image | Private value |
+
+### HTTPS and production security
+
+| Variable | Development default | Purpose |
+|---|---:|---|
+| `SECURE_SSL_REDIRECT` | `False` | Redirects HTTP requests to HTTPS |
+| `SESSION_COOKIE_SECURE` | `False` | Sends session cookies only over HTTPS |
+| `CSRF_COOKIE_SECURE` | `False` | Sends CSRF cookies only over HTTPS |
+| `SECURE_HSTS_SECONDS` | `0` | Sets the browser HSTS duration |
+| `SECURE_HSTS_INCLUDE_SUBDOMAINS` | `False` | Applies HSTS to all subdomains |
+| `SECURE_HSTS_PRELOAD` | `False` | Enables the HSTS preload directive |
+
+The HTTPS values remain disabled during local HTTP development.
+
+They should only be enabled after HTTPS, the production domain, reverse-proxy behaviour, and subdomain strategy have been verified.
+
 ---
 
 ## API Endpoints
 
-### GET all issues
-```
+### Retrieve all issues
+
+```http
 GET /issues/
-``` 
-### POST create issue
 ```
+
+Example:
+
+```bash
+curl http://localhost:8000/issues/
+```
+
+Successful response:
+
+```json
+[
+  {
+    "id": 1,
+    "title": "Broken traffic light",
+    "description": "The traffic light has stopped working.",
+    "location": "Ring Road, Ibadan",
+    "reporter": "citizen",
+    "created_at": "2026-07-22T12:00:00Z"
+  }
+]
+```
+
+Issues are returned with the most recently created issue first.
+
+### Create an issue
+
+```http
 POST /issues/
 ```
-### Sample request:
+
+Example:
+
+```bash
+curl -X POST http://localhost:8000/issues/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Broken traffic light",
+    "description": "The traffic light has stopped working.",
+    "location": "Ring Road, Ibadan",
+    "reporter": "citizen"
+  }'
+```
+
+Successful response:
+
+```http
+HTTP/1.1 201 Created
+```
+
 ```json
 {
+  "id": 1,
   "title": "Broken traffic light",
-  "description": "Not working",
-  "location": "Abuja"
+  "description": "The traffic light has stopped working.",
+  "location": "Ring Road, Ibadan",
+  "reporter": "citizen",
+  "created_at": "2026-07-22T12:00:00Z"
 }
 ```
-### Validation Example:
+
+### Validation example
+
+Issue titles must contain at least five characters.
+
+Request:
+
 ```json
 {
-  "title": ["Title must be at least 5 characters long."]
+  "title": "Road",
+  "description": "The road is damaged.",
+  "location": "Ibadan",
+  "reporter": "citizen"
 }
-``` 
----
+```
 
-## Key Engineering Concepts Applied
+Response:
 
-### 1. Serializer-based Validation
-Validation is handled at the serializer level, ensuring:
-- Clean separation of concerns
-- Reusable validation logic
-- Structured error responses
+```http
+HTTP/1.1 400 Bad Request
+```
 
----
-
-### 2. ORM vs Raw SQL
-Django ORM is used for:
-- Rapid development
-- Maintainability
-- Database abstraction
-
-Raw SQL may still be required for performance-critical operations.
+```json
+{
+  "title": [
+    "Title must be at least 5 characters long."
+  ]
+}
+```
 
 ---
 
-### 3. Database Migrations
-- `makemigrations` → generates schema change plan  
-- `migrate` → applies schema to database  
+## Testing and Quality Checks
 
-Migrations act as version control for database structure.
+### Run Django system checks
 
----
+```bash
+python app/manage.py check
+```
 
-### 4. Environment Configuration
-Sensitive values are stored outside code using environment variables.
+### Run automated tests
 
-> **Key Insight:** Configuration errors can be more dangerous than code errors.
+```bash
+python app/manage.py test
+```
 
----
+### Check installed dependency compatibility
 
-### 5. Debugging Approach
-Issues encountered:
-- PostgreSQL permission errors (schema access)
-- Environment variables not loading correctly
+```bash
+python -m pip check
+```
 
-Resolution involved:
-- Reading error logs
-- Identifying root cause (misconfiguration)
-- Applying least-privilege fixes
+### Build the Docker image
 
----
+```bash
+docker build --tag urban-issue-api:local .
+```
 
-## 🔐 Security Considerations
+### Validate the complete Compose environment
 
-- No credentials stored in source code  
-- `.env` is excluded via `.gitignore`  
-- Environment-based configuration enforced  
+```bash
+docker compose up --build -d
+docker compose ps
+curl -i http://localhost:8000/issues/
+```
 
----
+### Run Django's deployment assessment
 
-## 🧪 Testing the API
+```bash
+DEBUG=False python app/manage.py check --deploy
+```
 
-Use:
-- Browser (GET requests)
-- Postman or curl (POST requests)
+A production simulation can be performed using:
 
----
+```bash
+DEBUG=False \
+SECURE_SSL_REDIRECT=True \
+SESSION_COOKIE_SECURE=True \
+CSRF_COOKIE_SECURE=True \
+SECURE_HSTS_SECONDS=3600 \
+SECURE_HSTS_INCLUDE_SUBDOMAINS=False \
+SECURE_HSTS_PRELOAD=False \
+python app/manage.py check --deploy
+```
 
-## 🚧 Next Steps (DevOps Focus)
-
-- Dockerize the application  
-- Add CI/CD pipeline  
-- Deploy to Azure  
-- Introduce Terraform (Infrastructure as Code)  
-- Add monitoring (Prometheus + Grafana)  
-
----
-
-## 📈 Key Takeaways
-
-- Real-world issues are often configuration-related, not code-related  
-- Reading error logs is a critical engineering skill  
-- Validation should be handled at the correct layer (serializer vs view)  
-- Environment variables must be explicitly loaded and managed  
+Warnings relating to HSTS subdomains and browser preload are currently intentional. Those settings will remain disabled until the final production domain and HTTPS architecture are established.
 
 ---
 
-## 👤 Author
+## Continuous Integration
 
-Built as part of a hands-on DevOps transition journey.
+The GitHub Actions workflow runs:
+
+- On every pull request
+- On every push to `main`
+
+The pipeline performs the following checks:
+
+1. Checks out the repository
+2. Configures Python 3.12
+3. Restores the pip dependency cache
+4. Installs pinned dependencies
+5. Starts an isolated PostgreSQL service
+6. Waits for PostgreSQL readiness
+7. Applies Django migrations
+8. Runs Django system checks
+9. Runs automated tests
+10. Builds the Docker image
+
+The CI database credentials are deliberately disposable test values. They exist only inside the temporary GitHub Actions runner and are not production secrets.
+
+A pull request is not merged until the pipeline completes successfully.
+
+---
+
+## Production Readiness
+
+The project currently includes a production-oriented foundation, but it should not yet be described as a fully production-ready or production-deployed service.
+
+### Implemented controls
+
+- Sensitive Django settings are loaded from environment variables
+- The secret key is no longer hardcoded
+- Debug mode is environment controlled
+- Allowed hosts are environment controlled
+- HTTPS redirect behaviour is configurable
+- Secure session and CSRF cookies are configurable
+- HSTS duration is configurable
+- HSTS subdomain and preload policies are configurable
+- Gunicorn is used instead of Django's development server
+- Dependencies are pinned
+- Docker uses separate builder and runtime stages
+- PostgreSQL readiness is checked before application startup
+- CI validates migrations, checks, tests, and the Docker build
+
+### Deferred deployment decisions
+
+The following will be finalised during cloud deployment:
+
+- Azure hosting service
+- Production PostgreSQL service
+- Production domain
+- TLS certificate configuration
+- Reverse-proxy HTTPS headers
+- Trusted proxy configuration
+- HSTS duration
+- HSTS subdomain coverage
+- HSTS preload eligibility
+- Static file strategy
+- Production logging
+- Monitoring and alerting
+
+---
+
+## Key Engineering Decisions
+
+### PostgreSQL instead of SQLite
+
+PostgreSQL provides an environment closer to a real production system. It also introduces practical experience with database users, permissions, service readiness, credentials, networking, persistence, and CI database services.
+
+### Environment-based configuration
+
+Configuration varies between local development, Docker, CI, and production. Externalising the configuration prevents sensitive values from being committed and allows the same application code to run in different environments.
+
+### Gunicorn instead of `runserver`
+
+Django's development server is intended for development. Gunicorn provides the production WSGI runtime used by the container.
+
+### Multi-stage Docker build
+
+Dependencies are installed in a builder stage and copied into a separate runtime stage. This separates dependency installation from application execution and provides a cleaner production foundation.
+
+### Database health checks
+
+Opening port `5432` does not necessarily mean the configured PostgreSQL database is ready for application traffic. The Compose health check uses `pg_isready` and delays the Django service until PostgreSQL is healthy.
+
+### Disposable CI credentials
+
+The CI database is temporary and isolated. Visible non-production test credentials make the pipeline reproducible for pull requests without exposing or depending on production secrets.
+
+### Deliberate HSTS adoption
+
+HSTS can have long-lasting effects on a domain and its subdomains. The application supports HSTS configuration, but advanced options remain disabled until the deployed domain and HTTPS architecture are verified.
+
+---
+
+## Project Experience
+
+Through this project, I have gained hands-on experience in the following areas:
+
+### Backend development
+
+- Creating Django models
+- Working with Django migrations
+- Building Django REST Framework serializers
+- Implementing serializer-level validation
+- Creating list and create API operations
+- Using the Django ORM with PostgreSQL
+- Returning structured API responses and validation errors
+
+### Containerisation
+
+- Writing a multi-stage Dockerfile
+- Containerising Django and Gunicorn
+- Running Django and PostgreSQL as separate services
+- Configuring service-to-service networking
+- Persisting PostgreSQL data with named volumes
+- Adding database health-aware startup behaviour
+- Debugging container logs and worker startup failures
+
+### Continuous integration
+
+- Creating a GitHub Actions workflow
+- Running PostgreSQL as a CI service
+- Supplying isolated CI environment variables
+- Automating migrations
+- Automating Django system checks
+- Automating test execution
+- Validating that the Docker image builds on a clean runner
+- Using pull requests and green pipelines as merge gates
+
+### Configuration and security
+
+- Removing hardcoded secrets
+- Managing environment-specific configuration
+- Parsing Boolean and list values from environment variables
+- Assessing deployment security with `check --deploy`
+- Making HTTPS, cookie, and HSTS settings environment controlled
+- Separating local development settings from production decisions
+
+### Troubleshooting
+
+- Reading Python tracebacks
+- Identifying the first meaningful exception
+- Diagnosing Python import-path problems
+- Troubleshooting PostgreSQL permissions and readiness
+- Distinguishing network failures from code failures
+- Comparing behaviour across local, Docker, and CI environments
+- Applying fixes through small branches and pull requests
+
+---
+
+## Challenges and Lessons Learned
+
+### 1. PostgreSQL permissions and ownership
+
+**Problem**
+
+The application initially encountered PostgreSQL permission errors while attempting to create or access database objects.
+
+**Diagnosis**
+
+A successful connection to PostgreSQL did not automatically mean the application user had the correct database and schema permissions.
+
+**Resolution**
+
+The PostgreSQL role, database ownership, and required permissions were reviewed and corrected.
+
+**Lesson**
+
+Database connectivity, authentication, database ownership, and schema permissions are separate concerns. A database connection can succeed while migrations still fail.
+
+---
+
+### 2. Conflicting `decouple` packages
+
+**Problem**
+
+Django failed with:
+
+```text
+ImportError: cannot import name 'config' from 'decouple'
+```
+
+**Diagnosis**
+
+The environment had previously contained the unrelated `decouple` package instead of, or alongside, the required `python-decouple` package.
+
+Both packages use the same Python import name:
+
+```python
+from decouple import config
+```
+
+**Resolution**
+
+The conflicting packages were removed and the pinned project requirements were reinstalled.
+
+**Lesson**
+
+The import name used in Python code is not always the same as the package name installed by pip. Dependency conflicts can remain in a virtual environment even after a requirements file has been corrected.
+
+---
+
+### 3. Inconsistent Django import paths
+
+**Problem**
+
+Local execution and CI produced errors such as:
+
+```text
+ModuleNotFoundError: No module named 'app'
+```
+
+**Diagnosis**
+
+The project mixed two different Python package conventions:
+
+```text
+app.core
+app.issues
+```
+
+and:
+
+```text
+core
+issues
+```
+
+Running:
+
+```bash
+python app/manage.py
+```
+
+adds the inner `app/` directory to Python's import path. From that execution context, the correct top-level packages are `core` and `issues`.
+
+**Resolution**
+
+The project was standardised to use:
+
+```text
+core.settings
+core.urls
+core.wsgi
+issues.apps.IssuesConfig
+issues.views
+```
+
+**Lesson**
+
+Python imports depend on the working directory and the entries in `sys.path`. A module path that works from one execution location may fail from another.
+
+---
+
+### 4. Gunicorn working-directory failure
+
+**Problem**
+
+Gunicorn found the WSGI file but the worker failed while loading Django settings:
+
+```text
+ModuleNotFoundError: No module named 'core'
+```
+
+**Diagnosis**
+
+Gunicorn was launched from the repository root, while the `core` package was inside the nested `app/` directory.
+
+**Resolution**
+
+Gunicorn was configured to change into the Django application directory before loading the WSGI module:
+
+```bash
+gunicorn --chdir app core.wsgi:application --bind 0.0.0.0:8000
+```
+
+**Lesson**
+
+Finding a WSGI file and successfully booting the Django application are separate stages. The application server's working directory must match the project's Python import layout.
+
+---
+
+### 5. Port availability versus database readiness
+
+**Problem**
+
+The Django container originally waited for PostgreSQL by checking whether port `5432` was open.
+
+**Diagnosis**
+
+An open TCP port only indicates that a process is listening. It does not confirm that PostgreSQL has completed initialisation or that the configured database is ready.
+
+**Resolution**
+
+The manual Netcat loop was replaced with a Docker health check using:
+
+```bash
+pg_isready
+```
+
+The Django service now depends on the PostgreSQL service reaching a healthy state.
+
+**Lesson**
+
+Service availability should be measured with an application-aware health check rather than a basic network-port test.
+
+---
+
+### 6. Generated Python files committed to Git
+
+**Problem**
+
+Compiled `.pyc` files and `__pycache__` directories were accidentally tracked in the repository.
+
+**Diagnosis**
+
+Adding a pattern to `.gitignore` does not automatically remove files that Git already tracks.
+
+**Resolution**
+
+The files were removed from Git's index and the ignore rules were expanded:
+
+```gitignore
+__pycache__/
+*.py[cod]
+*$py.class
+```
+
+**Lesson**
+
+`.gitignore` prevents new untracked files from being added. Previously tracked generated files must be explicitly removed from the index.
+
+---
+
+### 7. Docker dependency download timeout
+
+**Problem**
+
+A clean Docker build failed while downloading Django from PyPI:
+
+```text
+ReadTimeoutError: HTTPSConnectionPool(host='files.pythonhosted.org')
+```
+
+**Diagnosis**
+
+The download had started successfully but the network connection was extremely slow and timed out. The error was unrelated to the application code or dependency compatibility.
+
+**Resolution**
+
+The build was retried without unnecessarily discarding all reusable Docker layers. Pip timeout and retry settings were also considered for unreliable connections.
+
+**Lesson**
+
+Not every build failure is a source-code failure. Download rate, timeout location, and the final exception should be examined before changing application dependencies.
+
+---
+
+### 8. Differences between local, Docker, and CI environments
+
+**Problem**
+
+Configuration that worked locally did not always work in Docker or GitHub Actions.
+
+Examples included:
+
+- `DB_HOST=localhost` locally versus `DB_HOST=db` in Compose
+- Required `SECRET_KEY` missing in CI
+- Different Python working directories
+- PostgreSQL service credentials not matching Django credentials
+
+**Diagnosis**
+
+Each environment has a different network and process context even though it runs the same application code.
+
+**Resolution**
+
+Configuration was made explicit for each environment:
+
+- `.env` for local and Compose execution
+- Disposable job-level values for CI
+- Service names for container networking
+- Consistent commands for migrations, checks, tests, and Gunicorn
+
+**Lesson**
+
+A reliable application requires configuration parity, not identical configuration values. Every environment must supply the same categories of configuration in a way appropriate to that environment.
+
+---
+
+### 9. CI success did not initially validate the container
+
+**Problem**
+
+The first passing pipeline proved that Django migrations, checks, and tests worked, but it did not prove that the Dockerfile could build.
+
+**Diagnosis**
+
+The workflow ended after the test stage.
+
+**Resolution**
+
+A Docker build stage was added:
+
+```bash
+docker build --tag urban-issue-api:ci .
+```
+
+**Lesson**
+
+A green pipeline only validates the steps it actually runs. CI coverage must be compared with the artefacts intended for deployment.
+
+---
+
+## What I Learned
+
+The most important lesson from this project is that application development and DevOps cannot be separated cleanly.
+
+A backend API may work in a local Python process but still fail because of:
+
+- Package conflicts
+- Import paths
+- Incorrect working directories
+- Missing environment variables
+- Database permissions
+- Service startup order
+- Container networking
+- CI configuration
+- Production security requirements
+
+I also learned to use a more structured troubleshooting process:
+
+1. Reproduce the problem
+2. Read the full error output
+3. Locate the first meaningful exception
+4. Identify the failing layer
+5. Change one relevant variable at a time
+6. Run the smallest useful verification command
+7. Test locally
+8. Test in Docker
+9. Test in CI
+10. Document the final decision
+
+This project has helped me move from simply following tutorials toward understanding why application, container, database, and CI configurations behave the way they do.
+
+---
+
+## Roadmap
+
+### Completed
+
+- [x] Django REST API foundation
+- [x] PostgreSQL integration
+- [x] Environment-based database configuration
+- [x] Issue creation endpoint
+- [x] Issue list endpoint
+- [x] Serializer-level validation
+- [x] Initial automated model test
+- [x] Multi-stage Docker image
+- [x] Docker Compose environment
+- [x] Gunicorn runtime
+- [x] PostgreSQL health check
+- [x] Environment-based security settings
+- [x] GitHub Actions CI
+- [x] Automated migrations and system checks
+- [x] Automated Docker build validation
+- [x] Production deployment assessment
+
+### Planned API development
+
+- [ ] Retrieve a single issue
+- [ ] Update an issue
+- [ ] Delete an issue
+- [ ] Issue status lifecycle
+- [ ] Issue categories
+- [ ] Priority levels
+- [ ] Assignment and ownership
+- [ ] Filtering and search
+- [ ] Pagination
+- [ ] Authentication and authorisation
+- [ ] Expanded validation
+- [ ] OpenAPI and Swagger documentation
+
+### Planned quality improvements
+
+- [ ] Serializer tests
+- [ ] API endpoint tests
+- [ ] Validation tests
+- [ ] Permission tests
+- [ ] Test coverage reporting
+- [ ] Linting and formatting checks
+- [ ] Container runtime health endpoint
+
+### Planned DevOps development
+
+- [ ] Publish versioned Docker images
+- [ ] Deploy the API to Azure
+- [ ] Configure a managed PostgreSQL database
+- [ ] Add deployment automation
+- [ ] Provision infrastructure with Terraform
+- [ ] Add structured production logging
+- [ ] Add monitoring and observability
+- [ ] Add alerting
+- [ ] Evaluate Kubernetes deployment after the initial cloud deployment
+
+---
+
+## Author
+
+**Dayo Jude Adeyemi**
+
+IT Workspace Specialist transitioning into DevOps and cloud engineering, with a focus on Linux, Azure, AWS, Docker, Kubernetes, CI/CD, automation, and production troubleshooting.
+
+- GitHub: [jhude51](https://github.com/jhude51)
+- LinkedIn: [dayo-jude-adeyemi](https://www.linkedin.com/in/dayo-jude-adeyemi)
+
+This project is part of my practical journey toward building and operating reliable cloud-native applications rather than relying only on certifications and tutorial-based learning.
