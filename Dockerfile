@@ -10,8 +10,6 @@ RUN pip install --no-cache-dir --user -r requirements.txt
 # Stage 2: Runtime
 FROM python:3.12-slim
 
-RUN apt-get update && apt-get install -y netcat-openbsd
-
 WORKDIR /app
 
 COPY --from=builder /root/.local /root/.local
