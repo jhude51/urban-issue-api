@@ -10,9 +10,13 @@ jobs:
         runs-on: ubuntu-latest
 
         env:
-            DB_NAME: ${{ secrets.POSTGRES_DB }}
-            DB_USER: ${{ secrets.POSTGRES_USER }}
-            DB_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+            SECRET_KEY: ci-only-secret-key-not-for-production
+            DEBUG: "False"
+            ALLOWED_HOSTS: localhost,127.0.0.1
+
+            DB_NAME: urban_issue_ci
+            DB_USER: urban_issue_ci
+            DB_PASSWORD: ci-only-database-password
             DB_HOST: localhost
             DB_PORT: 5432
 
@@ -20,13 +24,13 @@ jobs:
             postgres:
                 image: postgres:15
                 env:
-                    POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-                    POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-                    POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+                    POSTGRES_DB: urban_issue_ci
+                    POSTGRES_USER: urban_issue_ci
+                    POSTGRES_PASSWORD: ci-only-database-password
                 ports:
                     - 5432:5432
                 options: >-
-                    --health-cmd="pg_isready -U dayo"
+                    --health-cmd="pg_isready -U urban_issue_ci -d urban_issue_ci"
                     --health-interval=10s
                     --health-timeout=5s
                     --health-retries=5

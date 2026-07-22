@@ -9,24 +9,32 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
   
   web:
     build: .
     container_name: django_app
     command: >
-      sh -c " 
-      until nc -z db 5432; do
-        echo 'Waiting for PostgreSQL...';
-        sleep 1;
-      done;
+      sh -c "
       python app/manage.py migrate && 
       gunicorn --chdir app core.wsgi:application --bind 0.0.0.0:8000
       "
     ports:
       - "8000:8000"
     depends_on:
-      - db
-    env_file: .env
+      db:
+        condition: service_healthy
+    env_file: 
+      - .env
 
 volumes:
   postgres_data:
