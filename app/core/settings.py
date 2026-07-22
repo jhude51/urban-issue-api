@@ -57,6 +57,18 @@ SECURE_HSTS_SECONDS = config(
     cast=int,
 )
 
+SECURE_HSTS_INCLUDE_SUBDOMAINS = config(
+    "SECURE_HSTS_INCLUDE_SUBDOMAINS",
+    default=False,
+    cast=bool,
+)
+
+SECURE_HSTS_PRELOAD = config(
+    "SECURE_HSTS_PRELOAD",
+    default=False,
+    cast=bool,
+)
+
 # Application definition
 
 INSTALLED_APPS = [
