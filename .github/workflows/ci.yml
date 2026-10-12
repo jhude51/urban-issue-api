@@ -70,8 +70,9 @@ jobs:
                 python app/manage.py check
 
             - name: Run tests
+              working-directory: app
               run: |
-                python app/manage.py test
+                python manage.py test -v 2
 
             - name: Build Docker image
               run: |
