@@ -80,6 +80,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'issues.apps.IssuesConfig',
     'rest_framework',
+    'django_filters',
 ]
 
 MIDDLEWARE = [
