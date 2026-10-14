@@ -181,3 +181,287 @@ class IssueAPITest(APITestCase):
         self.assertFalse(
             Issue.objects.filter(pk=self.issue.pk).exists()
         )
+
+    def test_new_issue_defaults_to_reported(self):
+        payload = {
+            "title": "Damaged road surface",
+            "description": "Several large potholes are present.",
+            "location": "Ibadan",
+            "reporter": "citizen",
+            "category": "road",
+            "priority": "high",
+        }
+
+        response = self.client.post(
+            self.list_url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+        self.assertEqual(
+            response.data["status"],
+            "reported",
+        )
+
+    def test_new_issue_cannot_start_with_later_status(self):
+        payload = {
+            "title": "Damaged road surface",
+            "description": "Several large potholes are present.",
+            "location": "Ibadan",
+            "reporter": "citizen",
+            "status": "resolved",
+        }
+
+        response = self.client.post(
+            self.list_url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+        self.assertIn("status", response.data)
+
+    def test_valid_status_transition(self):
+        response = self.client.patch(
+            self.detail_url,
+            {"status": "acknowledged"},
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.issue.refresh_from_db()
+
+        self.assertEqual(
+            self.issue.status,
+            "acknowledged",
+        )
+
+    def test_invalid_status_transition(self):
+        response = self.client.patch(
+            self.detail_url,
+            {"status": "resolved"},
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.issue.refresh_from_db()
+
+        self.assertEqual(
+            self.issue.status,
+            "reported",
+        )
+
+    def test_resolved_issue_can_be_reopened(self):
+        self.issue.status = "resolved"
+        self.issue.save()
+
+        response = self.client.patch(
+            self.detail_url,
+            {"status": "in_progress"},
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.issue.refresh_from_db()
+
+        self.assertEqual(
+            self.issue.status,
+            "in_progress",
+        )
+
+    def test_closed_issue_cannot_be_reopened(self):
+        self.issue.status = "closed"
+        self.issue.save()
+
+        response = self.client.patch(
+            self.detail_url,
+            {"status": "in_progress"},
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.issue.refresh_from_db()
+
+        self.assertEqual(
+            self.issue.status,
+            "closed",
+        )
+
+    def test_create_issue_with_category_and_priority(self):
+        payload = {
+            "title": "Collapsed drainage channel",
+            "description": "The drainage wall has collapsed.",
+            "location": "Ring Road, Ibadan",
+            "reporter": "citizen",
+            "category": "drainage",
+            "priority": "high",
+        }
+
+        response = self.client.post(
+            self.list_url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+        self.assertEqual(
+            response.data["category"],
+            "drainage",
+        )
+        self.assertEqual(
+            response.data["priority"],
+            "high",
+        )
+
+    def test_new_issue_uses_default_category_and_priority(self):
+        payload = {
+            "title": "Unclassified urban issue",
+            "description": "An issue has been reported.",
+            "location": "Ibadan",
+            "reporter": "citizen",
+        }
+
+        response = self.client.post(
+            self.list_url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+        self.assertEqual(
+            response.data["category"],
+            "other",
+        )
+        self.assertEqual(
+            response.data["priority"],
+            "medium",
+        )
+
+    def test_reject_invalid_category(self):
+        payload = {
+            "title": "Electrical infrastructure issue",
+            "description": "An electrical issue has been reported.",
+            "location": "Ibadan",
+            "reporter": "citizen",
+            "category": "electricity",
+        }
+
+        response = self.client.post(
+            self.list_url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+        self.assertIn("category", response.data)
+
+
+    def test_reject_invalid_priority(self):
+        payload = {
+            "title": "Serious drainage issue",
+            "description": "A drainage problem requires attention.",
+            "location": "Ibadan",
+            "reporter": "citizen",
+            "priority": "urgent",
+        }
+
+        response = self.client.post(
+            self.list_url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+        self.assertIn("priority", response.data)
+
+    def test_updating_issue_changes_updated_at(self):
+        original_updated_at = self.issue.updated_at
+
+        response = self.client.patch(
+            self.detail_url,
+            {"location": "New Bodija, Ibadan"},
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.issue.refresh_from_db()
+
+        self.assertGreater(
+            self.issue.updated_at,
+            original_updated_at,
+        )
+
+    def test_server_managed_fields_are_read_only(self):
+        payload = {
+            "title": "Damaged road surface",
+            "description": "Several potholes require repair.",
+            "location": "Ibadan",
+            "reporter": "citizen",
+            "id": 999,
+            "created_at": "2035-01-01T00:00:00Z",
+            "updated_at": "2035-01-01T00:00:00Z",
+        }
+
+        response = self.client.post(
+            self.list_url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        created_issue = Issue.objects.get(
+            pk=response.data["id"],
+        )
+
+        self.assertNotEqual(created_issue.id, 999)
+        self.assertNotEqual(
+            str(created_issue.created_at),
+            "2035-01-01T00:00:00Z",
+        )
+        self.assertNotEqual(
+            str(created_issue.updated_at),
+            "2035-01-01T00:00:00Z",
+        )
