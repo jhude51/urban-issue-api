@@ -27,9 +27,10 @@ class IssueAPITest(APITestCase):
             response.status_code,
             status.HTTP_200_OK,
         )
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(len(response.data["results"]), 1)
         self.assertEqual(
-            response.data[0]["title"],
+            response.data["results"][0]["title"],
             self.issue.title,
         )
 
@@ -48,7 +49,7 @@ class IssueAPITest(APITestCase):
             status.HTTP_200_OK,
         )
         self.assertEqual(
-            response.data[0]["id"],
+            response.data["results"][0]["id"],
             newer_issue.id,
         )
 
@@ -464,4 +465,202 @@ class IssueAPITest(APITestCase):
         self.assertNotEqual(
             str(created_issue.updated_at),
             "2035-01-01T00:00:00Z",
+        )
+
+    def test_filter_issues_by_category(self):
+        Issue.objects.create(
+            title="Blocked drainage channel",
+            description="Drainage is blocked.",
+            location="Challenge, Ibadan",
+            reporter="citizen",
+            category="drainage",
+            priority="high",
+        )
+
+        response = self.client.get(
+            self.list_url,
+            {"category": "drainage"},
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(
+            response.data["results"][0]["category"],
+            "drainage",
+        )
+
+    def test_filter_issues_by_multiple_fields(self):
+        Issue.objects.create(
+            title="Serious road damage",
+            description="Road surface has collapsed.",
+            location="Ibadan",
+            reporter="citizen",
+            category="road",
+            priority="high",
+            status="reported",
+        )
+
+        Issue.objects.create(
+            title="Minor road damage",
+            description="Small pothole.",
+            location="Ibadan",
+            reporter="citizen",
+            category="road",
+            priority="low",
+            status="reported",
+        )
+
+        response = self.client.get(
+            self.list_url,
+            {
+                "category": "road",
+                "priority": "high",
+                "status": "reported",
+            }
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(
+            response.data["results"][0]["title"],
+            "Serious road damage",
+        )
+
+    def test_search_issues_by_location(self):
+        Issue.objects.create(
+            title="Broken drainage channel",
+            description="Waste is preventing water flow.",
+            location="Bodija, Ibadan",
+            reporter="citizen",
+        )
+
+        Issue.objects.create(
+            title="Broken streetlight",
+            description="Streetlight is not working.",
+            location="Mokola, Ibadan",
+            reporter="citizen",
+        )
+
+        response = self.client.get(
+            self.list_url,
+            {"search": "Bodija"},
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(
+            response.data["results"][0]["location"],
+            "Bodija, Ibadan",
+        )
+
+    def test_order_issues_by_title(self):
+        Issue.objects.create(
+            title="Zebra crossing issue",
+            description="Road marking is damaged.",
+            location="Ibadan",
+            reporter="citizen",
+        )
+
+        response = self.client.get(
+            self.list_url,
+            {"ordering": "title"},
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        titles = [
+            issue["title"]
+            for issue in response.data["results"]
+        ]
+
+        self.assertEqual(
+            titles,
+            sorted(titles),
+        )
+
+    def test_default_ordering_is_newest_first(self):
+        newer_issue = Issue.objects.create(
+            title="Newer reported issue",
+            description="This issue was created later.",
+            location="Ibadan",
+            reporter="citizen",
+        )
+
+        response = self.client.get(self.list_url)
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data["results"][0]["id"],
+            newer_issue.id,
+        )
+
+    def test_issue_list_is_paginated(self):
+        for number in range(6):
+            Issue.objects.create(
+                title=f"Reported issue {number}",
+                description="Test pagination issue.",
+                location="Ibadan",
+                reporter="citizen",
+            )
+
+        response = self.client.get(self.list_url)
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertIn("count", response.data)
+        self.assertIn("next", response.data)
+        self.assertIn("previous", response.data)
+        self.assertIn("results", response.data)
+
+        self.assertEqual(response.data["count"], 7)
+        self.assertEqual(
+            len(response.data["results"]),
+            5,
+        )
+        self.assertIsNotNone(response.data["next"])
+
+    def test_client_can_request_page_size(self):
+        for number in range(4):
+            Issue.objects.create(
+                title=f"Pagination issue {number}",
+                description="Testing custom page size.",
+                location="Ibadan",
+                reporter="citizen",
+            )
+
+        response = self.client.get(
+            self.list_url,
+            {"page_size": 2},
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(response.data["count"], 5)
+        self.assertEqual(
+            len(response.data["results"]),
+            2,
         )
