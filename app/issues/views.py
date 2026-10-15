@@ -1,70 +1,45 @@
-from django.shortcuts import get_object_or_404
-from rest_framework import status
-from rest_framework.views import APIView
-from rest_framework.response import Response
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters, generics
 
 from .models import Issue
+from .pagination import IssuePagination
 from .serializers import IssueSerializer
 
-class IssueList(APIView):
-    def get(self, request):
-        issues = Issue.objects.all().order_by('-created_at')
-        serializer = IssueSerializer(issues, many=True)
-        return Response(serializer.data)
-    
-    def post(self, request):
-        serializer = IssueSerializer(data=request.data)
+class IssueList(generics.ListCreateAPIView):
+    queryset = Issue.objects.all()
+    serializer_class = IssueSerializer
+    pagination_class = IssuePagination
 
-        if serializer.is_valid():
-            serializer.save()
-            return Response(
-                serializer.data,
-                status=status.HTTP_201_CREATED,
-            )
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter,
+    ]
 
-class IssueDetail(APIView):
-    def get_object(self, pk):
-        return get_object_or_404(Issue, pk=pk)
+    filterset_fields = [
+        "reporter",
+        "category",
+        "priority",
+        "status",
+    ]
 
-    def get(self, request, pk):
-        issue = self.get_object(pk)
-        serializer = IssueSerializer(issue)
-        return Response(serializer.data)
+    search_fields = [
+        "title",
+        "description",
+        "location",
+    ]
 
-    def put(self, request, pk):
-        issue = self.get_object(pk)
-        serializer = IssueSerializer(issue, data=request.data)
+    ordering_fields = [
+        "id",
+        "title",
+        "location",
+        "created_at",
+        "updated_at",
+    ]
 
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+    ordering = ["-created_at"]
 
-    def patch(self, request, pk):
-        issue = self.get_object(pk)
-        serializer = IssueSerializer(
-            issue,
-            data=request.data,
-            partial=True,
-        )
 
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    def delete(self, request, pk):
-        issue = self.get_object(pk)
-        issue.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+class IssueDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Issue.objects.all()
+    serializer_class = IssueSerializer
