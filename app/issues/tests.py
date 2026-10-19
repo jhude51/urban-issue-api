@@ -664,3 +664,40 @@ class IssueAPITest(APITestCase):
             len(response.data["results"]),
             2,
         )
+
+
+class APIDocumentationTest(APITestCase):
+    def test_openapi_schema_is_available(self):
+        response = self.client.get(
+            reverse("api-schema"),
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        schema_content = response.content.decode()
+
+        self.assertIn("openapi:", schema_content)
+        self.assertIn("/issues/", schema_content)
+
+    def test_swagger_ui_is_available(self):
+        response = self.client.get(
+            reverse("swagger-ui"),
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+    def test_redoc_ui_is_available(self):
+        response = self.client.get(
+            reverse("redoc"),
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
