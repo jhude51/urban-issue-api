@@ -69,6 +69,14 @@ jobs:
               run: |
                 python app/manage.py check
 
+            - name: Validate OpenAPI schema
+              working-directory: app
+              run: |
+                python manage.py spectacular \
+                    --file schema.yml \
+                    --validate \
+                    --fail-on-warn
+
             - name: Run tests
               working-directory: app
               run: |

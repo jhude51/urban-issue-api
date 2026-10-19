@@ -114,6 +114,22 @@ Supported reporter types:
 - Automated Docker image build validation
 - Configurable HTTPS, cookie, and HSTS settings
 
+### Issue management
+
+- Create urban issue reports
+- Retrieve individual issues
+- Update complete issue records
+- Partially update issues
+- Delete issues
+- Categorise issues
+- Assign priority levels
+- Track issue lifecycle status
+- Enforce valid lifecycle transitions
+- Filter issues by reporter, category, priority, and status
+- Search across title, description, and location
+- Order issue results
+- Paginate issue collections
+
 ---
 
 ## Architecture
@@ -452,99 +468,95 @@ They should only be enabled after HTTPS, the production domain, reverse-proxy be
 
 ## API Endpoints
 
-### Retrieve all issues
+The API supports full CRUD operations, issue lifecycle management, filtering, search, ordering, and pagination.
 
-```http
-GET /issues/
+Base URL during local development:
+
+```text
+http://localhost:8000
 ```
 
-Example:
+### Endpoint Summary
 
-```bash
-curl http://localhost:8000/issues/
-```
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `GET` | `/issues/` | List issues |
+| `POST` | `/issues/` | Create an issue |
+| `GET` | `/issues/{id}/` | Retrieve an issue |
+| `PUT` | `/issues/{id}/` | Replace an issue |
+| `PATCH` | `/issues/{id}/` | Partially update an issue |
+| `DELETE` | `/issues/{id}/` | Delete an issue |
 
-Successful response:
-
-```json
-[
-  {
-    "id": 1,
-    "title": "Broken traffic light",
-    "description": "The traffic light has stopped working.",
-    "location": "Ring Road, Ibadan",
-    "reporter": "citizen",
-    "created_at": "2026-07-22T12:00:00Z"
-  }
-]
-```
-
-Issues are returned with the most recently created issue first.
-
-### Create an issue
-
-```http
-POST /issues/
-```
-
-Example:
+### Create an Issue
 
 ```bash
 curl -X POST http://localhost:8000/issues/ \
   -H "Content-Type: application/json" \
   -d '{
-    "title": "Broken traffic light",
-    "description": "The traffic light has stopped working.",
+    "title": "Large pothole on major road",
+    "description": "A large pothole is affecting traffic.",
     "location": "Ring Road, Ibadan",
-    "reporter": "citizen"
+    "reporter": "citizen",
+    "category": "road",
+    "priority": "high"
   }'
 ```
 
-Successful response:
+New issues default to:
 
-```http
-HTTP/1.1 201 Created
+```text
+category = other
+priority = medium
+status   = reported
 ```
 
-```json
-{
-  "id": 1,
-  "title": "Broken traffic light",
-  "description": "The traffic light has stopped working.",
-  "location": "Ring Road, Ibadan",
-  "reporter": "citizen",
-  "created_at": "2026-07-22T12:00:00Z"
-}
+### Issue Lifecycle
+
+```text
+reported → acknowledged → in_progress → resolved → closed
+                                      ↑
+                                      └── resolved issues may be reopened
 ```
 
-### Validation example
+Invalid lifecycle transitions are rejected with `400 Bad Request`.
 
-Issue titles must contain at least five characters.
+### Filtering, Search and Ordering
 
-Request:
+Filter by reporter, category, priority, or status:
 
-```json
-{
-  "title": "Road",
-  "description": "The road is damaged.",
-  "location": "Ibadan",
-  "reporter": "citizen"
-}
+```bash
+curl "http://localhost:8000/issues/?category=road&priority=high&status=reported"
 ```
 
-Response:
+Search across title, description, and location:
 
-```http
-HTTP/1.1 400 Bad Request
+```bash
+curl "http://localhost:8000/issues/?search=Bodija"
 ```
 
-```json
-{
-  "title": [
-    "Title must be at least 5 characters long."
-  ]
-}
+Order results:
+
+```bash
+curl "http://localhost:8000/issues/?ordering=-updated_at"
 ```
+
+### Pagination
+
+Results are paginated with a default page size of `5` and a maximum configurable page size of `50`.
+
+```bash
+curl "http://localhost:8000/issues/?page=2&page_size=10"
+```
+
+### API Documentation
+
+| Endpoint | Purpose |
+|---|---|
+| `/api/schema/` | OpenAPI schema |
+| `/api/docs/` | Swagger UI |
+| `/api/redoc/` | ReDoc documentation |
+
+Swagger and ReDoc provide the complete request/response schemas, field descriptions, validation rules, query parameters, and examples.
 
 ---
 
@@ -631,6 +643,19 @@ A pull request is not merged until the pipeline completes successfully.
 
 ---
 
+## API Documentation
+
+Interactive API documentation is available when the application is running:
+
+| Endpoint | Purpose |
+|---|---|
+| `/api/schema/` | OpenAPI schema |
+| `/api/docs/` | Swagger UI |
+| `/api/redoc/` | ReDoc documentation |
+
+Swagger and ReDoc document the available endpoints, request and response schemas, filtering parameters, pagination, issue classifications, and lifecycle operations.
+
+---
 ## Production Readiness
 
 The project currently includes a production-oriented foundation, but it should not yet be described as a fully production-ready or production-deployed service.
@@ -1078,18 +1103,18 @@ This project has helped me move from simply following tutorials toward understan
 
 ### Planned API development
 
-- [ ] Retrieve a single issue
-- [ ] Update an issue
-- [ ] Delete an issue
-- [ ] Issue status lifecycle
-- [ ] Issue categories
-- [ ] Priority levels
+- [x] Retrieve a single issue
+- [x] Update an issue
+- [x] Delete an issue
+- [x] Issue status lifecycle
+- [x] Issue categories
+- [x] Priority levels
 - [ ] Assignment and ownership
-- [ ] Filtering and search
-- [ ] Pagination
+- [x] Filtering and search
+- [x] Pagination
 - [ ] Authentication and authorisation
 - [ ] Expanded validation
-- [ ] OpenAPI and Swagger documentation
+- [x] OpenAPI and Swagger documentation
 
 ### Planned quality improvements
 

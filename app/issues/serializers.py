@@ -66,3 +66,29 @@ class IssueSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+        extra_kwargs = {
+            "title": {
+                "help_text": "Short summary of the reported urban issue."
+            },
+            "description": {
+                "help_text": "Detailed description of the problem."
+            },
+            "location": {
+                "help_text": "Human-readable location where the issue is located."
+            },
+            "reporter": {
+                "help_text": "Type of party reporting the issue."
+            },
+            "category": {
+                "help_text": "Infrastructure category assigned to the issue."
+            },
+            "priority": {
+                "help_text": "Operational priority of the reported issue."
+            },
+            "status": {
+                "help_text": (
+                    "Current lifecycle state. New issues begin as 'reported'."
+                ),
+            },
+        }
