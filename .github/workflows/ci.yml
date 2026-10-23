@@ -97,7 +97,26 @@ jobs:
                   --fail-under=95 \
                   -m
 
-            - name: Build Docker image
+            - name: Build versioned Docker image
               run: |
-                docker build --tag urban-issue-api:ci .
+                SHORT_SHA="${GITHUB_SHA::7}"
+
+                docker build \
+                  --build-arg APP_VERSION="$SHORT_SHA" \
+                  --build-arg VCS_REF="$GITHUB_SHA" \
+                  --tag "urban-issue-api:$SHORT_SHA" \
+                  --tag urban-issue-api:ci \
+                  .
+
+            - name: Verify Docker image metadata
+              run: |
+                SHORT_SHA="${GITHUB_SHA::7}"
+
+                docker image inspect \
+                  "urban-issue-api:$SHORT_SHA" \
+                  --format='Version: {{ index .Config.Labels "org.opencontainers.image.version" }}'
+
+                docker image inspect \
+                  "urban-issue-api:$SHORT_SHA" \
+                  --format='Revision: {{ index .Config.Labels "org.opencontainers.image.revision" }}'
                 
