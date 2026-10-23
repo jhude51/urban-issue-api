@@ -11,6 +11,7 @@ from .models import Issue
 from .pagination import IssuePagination
 from .serializers import IssueSerializer
 
+
 @extend_schema_view(
     get=extend_schema(
         tags=["Issues"],
@@ -44,8 +45,7 @@ from .serializers import IssueSerializer
                 value={
                     "title": "Large pothole on major road",
                     "description": (
-                        "A large pothole is causing vehicles "
-                        "to leave their lane."
+                        "A large pothole is causing vehicles to leave their lane."
                     ),
                     "location": "Ring Road, Ibadan",
                     "reporter": "citizen",
@@ -60,8 +60,7 @@ from .serializers import IssueSerializer
                     "id": 12,
                     "title": "Large pothole on major road",
                     "description": (
-                        "A large pothole is causing vehicles "
-                        "to leave their lane."
+                        "A large pothole is causing vehicles to leave their lane."
                     ),
                     "location": "Ring Road, Ibadan",
                     "reporter": "citizen",
@@ -111,13 +110,12 @@ class IssueList(generics.ListCreateAPIView):
 
     ordering = ["-created_at"]
 
+
 @extend_schema_view(
     get=extend_schema(
         tags=["Issues"],
         summary="Retrieve an issue",
-        description=(
-            "Return the complete details of a single urban issue."
-        ),
+        description=("Return the complete details of a single urban issue."),
         responses={
             200: IssueSerializer,
             404: OpenApiResponse(
@@ -180,9 +178,7 @@ class IssueList(generics.ListCreateAPIView):
     delete=extend_schema(
         tags=["Issues"],
         summary="Delete an issue",
-        description=(
-            "Permanently delete an existing urban issue."
-        ),
+        description=("Permanently delete an existing urban issue."),
         responses={
             204: OpenApiResponse(
                 description="Issue deleted successfully.",

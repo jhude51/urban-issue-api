@@ -48,11 +48,19 @@ jobs:
               uses: actions/cache@v4
               with:
                 path: ~/.cache/pip
-                key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+                key: ${{ runner.os }}-pip-${{ hashFiles('requirements*.txt') }}
 
             - name: Install dependencies
               run: |
-                pip install -r requirements.txt
+                pip install -r requirements-dev.txt
+
+            - name: Run Ruff linting
+              run: |
+                ruff check app
+
+            - name: Check Ruff formatting
+              run: |
+                ruff format --check app
 
             - name: Wait for PostgreSQL
               run: |
@@ -77,10 +85,17 @@ jobs:
                     --validate \
                     --fail-on-warn
 
-            - name: Run tests
+            - name: Run tests with coverage
               working-directory: app
               run: |
-                python manage.py test -v 2
+                coverage run \
+                  --rcfile=../.coveragerc \
+                  manage.py test -v 2
+
+                coverage report \
+                  --rcfile=../.coveragerc \
+                  --fail-under=95 \
+                  -m
 
             - name: Build Docker image
               run: |

@@ -12,21 +12,11 @@ The project is built with Django REST Framework, PostgreSQL, Docker, Gunicorn, a
 
 **Active development**
 
-The API foundation and production baseline are complete. The current version supports creating and retrieving urban issue reports, while additional issue-management features are planned.
+The API foundation, issue-management functionality, documentation, and automated quality baseline are complete. The current version supports full CRUD operations, issue categorisation and prioritisation, lifecycle management, filtering, search, ordering, pagination, and interactive OpenAPI documentation.
 
-Completed foundation:
+The project also includes automated API and edge-case testing, Ruff linting and formatting, application coverage measurement, OpenAPI schema validation, and Docker image validation through GitHub Actions.
 
-- Django REST API
-- PostgreSQL integration
-- Docker and Docker Compose
-- Gunicorn application server
-- Environment-based configuration
-- PostgreSQL health-aware startup
-- Automated migrations, system checks, and tests
-- Docker image validation in GitHub Actions
-- Configurable production security settings
-
-The project has not yet been deployed to Azure.
+The project has not yet been deployed to Azure. Cloud deployment, managed PostgreSQL, infrastructure automation, observability, and runtime hardening remain planned.
 
 ---
 
@@ -74,30 +64,35 @@ Rather than treating the API as a one-time coding exercise, I am developing it a
 
 ## Current Features
 
-### API functionality
+### API and Issue management
 
-- Create a new urban issue report
-- Retrieve all submitted issues
-- Return issues in reverse chronological order
+- Create, retrieve, update, partially update, and delete urban issue reports
+- Categorise issues by infrastructure type
+- Assign operational priority levels
+- Track issues through a controlled lifecycle
+- Enforce valid lifecycle transitions
+- Filter by reporter, category, priority, and status
+- Search across title, description, and location
+- Order issue collections
+- Paginate API responses
 - Validate submitted data using Django REST Framework serializers
-- Store issue reports in PostgreSQL
+- Store issue data in PostgreSQL
 - Manage records through the Django admin interface
 
-### Issue data model
-
-Each issue currently contains:
+Each issue contains:
 
 - `id`
 - `title`
 - `description`
 - `location`
 - `reporter`
+- `category`
+- `priority`
+- `status`
 - `created_at`
+- `updated_at`
 
-Supported reporter types:
-
-- `citizen`
-- `vendor`
+Supported reporter types are citizen and vendor.
 
 ### Application and DevOps foundation
 
@@ -114,21 +109,15 @@ Supported reporter types:
 - Automated Docker image build validation
 - Configurable HTTPS, cookie, and HSTS settings
 
-### Issue management
+### Quality engineering
 
-- Create urban issue reports
-- Retrieve individual issues
-- Update complete issue records
-- Partially update issues
-- Delete issues
-- Categorise issues
-- Assign priority levels
-- Track issue lifecycle status
-- Enforce valid lifecycle transitions
-- Filter issues by reporter, category, priority, and status
-- Search across title, description, and location
-- Order issue results
-- Paginate issue collections
+- Automated API and edge-case test coverage
+- Ruff linting and formatting enforcement
+- Application coverage measurement with Coverage.py
+- Minimum 95% coverage enforced in CI
+- OpenAPI schema validation with warnings treated as failures
+- Development and runtime dependencies separated
+- Docker image build validation in CI
 
 ---
 
@@ -183,12 +172,16 @@ Push to main / Pull request
               +-- Check out source code
               +-- Set up Python 3.12
               +-- Restore pip dependency cache
-              +-- Install dependencies
+              +-- Install development dependencies
+              +-- Run Ruff linting
+              +-- Validate Ruff formatting
               +-- Start PostgreSQL service
               +-- Wait for database readiness
               +-- Apply migrations
               +-- Run Django system checks
-              +-- Run automated tests
+              +-- Validate OpenAPI schema
+              +-- Run automated tests with coverage
+              +-- Enforce minimum 95% coverage
               +-- Build Docker image
 ```
 
@@ -232,6 +225,7 @@ urban-issue-api/
 │   │   ├── models.py
 │   │   ├── serializers.py
 │   │   ├── tests.py
+|   │   ├── pagination.py
 │   │   └── views.py
 │   └── manage.py
 ├── .dockerignore
@@ -240,6 +234,9 @@ urban-issue-api/
 ├── docker-compose.yaml
 ├── Dockerfile
 ├── requirements.txt
+├── requirements-dev.txt
+├── .coveragerc
+├── pyproject.toml
 └── README.md
 ```
 
@@ -332,7 +329,12 @@ curl -i http://localhost:8000/issues/
 A new database should return an empty list:
 
 ```json
-[]
+{
+  "count": 0,
+  "next": null,
+  "previous": null,
+  "results": []
+}
 ```
 
 ### 5. Check container status
@@ -562,16 +564,72 @@ Swagger and ReDoc provide the complete request/response schemas, field descripti
 
 ## Testing and Quality Checks
 
+The project uses automated tests and static quality checks to protect API behaviour and prevent regressions.
+
+### Run the test suite
+
+From the `app` directory:
+
+```bash
+DB_HOST=localhost python manage.py test -v 2
+```
+
+The current suite covers:
+- CRUD operations
+- Issue lifecycle transitions
+- Category, priority, and reporter validation
+- Required fields and field-length limits
+- Filtering, searching, and ordering
+- Pagination and pagination limits
+- PUT and PATCH behaviour
+- Read-only server-managed fields
+- OpenAPI, Swagger, and ReDoc availability
+- Invalid and edge-case API requests
+
+### Code Quality
+
+Run linting:
+```bash
+ruff check app
+```
+
+Check formatting:
+```bash
+ruff format --check app
+```
+
+To format the code locally:
+```bash
+ruff format app
+```
+
+### Test Coverage
+
+Run tests with coverage:
+```bash
+cd app
+
+DB_HOST=localhost coverage run \
+  --rcfile=../.coveragerc \
+  manage.py test
+
+coverage report \
+  --rcfile=../.coveragerc \
+  -m
+
+cd ..
+```
+
+The project currently achieves 100% coverage across the measured application code.
+
+CI requires a minimum coverage threshold of 95%.
+
+Test files, migrations, and framework entrypoints are excluded from the application coverage calculation.
+
 ### Run Django system checks
 
 ```bash
 python app/manage.py check
-```
-
-### Run automated tests
-
-```bash
-python app/manage.py test
 ```
 
 ### Check installed dependency compatibility
@@ -624,38 +682,27 @@ The GitHub Actions workflow runs:
 - On every pull request
 - On every push to `main`
 
-The pipeline performs the following checks:
+### CI quality gates
 
-1. Checks out the repository
-2. Configures Python 3.12
-3. Restores the pip dependency cache
-4. Installs pinned dependencies
-5. Starts an isolated PostgreSQL service
-6. Waits for PostgreSQL readiness
-7. Applies Django migrations
-8. Runs Django system checks
-9. Runs automated tests
-10. Builds the Docker image
+Every pull request is validated through GitHub Actions.
 
-The CI database credentials are deliberately disposable test values. They exist only inside the temporary GitHub Actions runner and are not production secrets.
+The pipeline performs:
 
-A pull request is not merged until the pipeline completes successfully.
+1. Dependency installation
+2. Ruff linting
+3. Ruff formatting validation
+4. PostgreSQL service health checks
+5. Django migrations
+6. Django system checks
+7. OpenAPI schema validation
+8. Automated tests
+9. Minimum 95% application coverage enforcement
+10. Docker image build validation
 
----
-
-## API Documentation
-
-Interactive API documentation is available when the application is running:
-
-| Endpoint | Purpose |
-|---|---|
-| `/api/schema/` | OpenAPI schema |
-| `/api/docs/` | Swagger UI |
-| `/api/redoc/` | ReDoc documentation |
-
-Swagger and ReDoc document the available endpoints, request and response schemas, filtering parameters, pagination, issue classifications, and lifecycle operations.
+A pull request is not considered ready to merge until the pipeline completes successfully.
 
 ---
+
 ## Production Readiness
 
 The project currently includes a production-oriented foundation, but it should not yet be described as a fully production-ready or production-deployed service.
@@ -1113,17 +1160,17 @@ This project has helped me move from simply following tutorials toward understan
 - [x] Filtering and search
 - [x] Pagination
 - [ ] Authentication and authorisation
-- [ ] Expanded validation
+- [x] Expanded validation
 - [x] OpenAPI and Swagger documentation
 
 ### Planned quality improvements
 
-- [ ] Serializer tests
-- [ ] API endpoint tests
-- [ ] Validation tests
+- [x] Serializer tests
+- [x] API endpoint tests
+- [x] Validation tests
 - [ ] Permission tests
-- [ ] Test coverage reporting
-- [ ] Linting and formatting checks
+- [x] Test coverage reporting
+- [x] Linting and formatting checks
 - [ ] Container runtime health endpoint
 
 ### Planned DevOps development

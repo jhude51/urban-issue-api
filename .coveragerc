@@ -1,0 +1,14 @@
+[run]
+source = 
+    issues
+    core
+omit = 
+    */migrations/*
+    */tests.py
+    manage.py
+    core/asgi.py
+    core/wsgi.py
+
+[report]
+show_missing = True
+skip_empty = True
