@@ -179,9 +179,7 @@ class IssueAPITest(APITestCase):
             response.status_code,
             status.HTTP_204_NO_CONTENT,
         )
-        self.assertFalse(
-            Issue.objects.filter(pk=self.issue.pk).exists()
-        )
+        self.assertFalse(Issue.objects.filter(pk=self.issue.pk).exists())
 
     def test_new_issue_defaults_to_reported(self):
         payload = {
@@ -388,7 +386,6 @@ class IssueAPITest(APITestCase):
         )
         self.assertIn("category", response.data)
 
-
     def test_reject_invalid_priority(self):
         payload = {
             "title": "Serious drainage issue",
@@ -519,7 +516,7 @@ class IssueAPITest(APITestCase):
                 "category": "road",
                 "priority": "high",
                 "status": "reported",
-            }
+            },
         )
 
         self.assertEqual(
@@ -582,10 +579,7 @@ class IssueAPITest(APITestCase):
             status.HTTP_200_OK,
         )
 
-        titles = [
-            issue["title"]
-            for issue in response.data["results"]
-        ]
+        titles = [issue["title"] for issue in response.data["results"]]
 
         self.assertEqual(
             titles,
@@ -663,6 +657,55 @@ class IssueAPITest(APITestCase):
         self.assertEqual(
             len(response.data["results"]),
             2,
+        )
+
+    def test_issue_string_representation(self):
+        self.assertEqual(
+            str(self.issue),
+            self.issue.title,
+        )
+
+    def test_new_issue_can_explicitly_start_as_reported(self):
+        payload = {
+            "title": "Damaged road surface",
+            "description": "Several potholes require repair.",
+            "location": "Ibadan",
+            "reporter": "citizen",
+            "status": "reported",
+        }
+
+        response = self.client.post(
+            self.list_url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+        self.assertEqual(
+            response.data["status"],
+            "reported",
+        )
+
+    def test_issue_can_keep_current_status(self):
+        response = self.client.patch(
+            self.detail_url,
+            {"status": "reported"},
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.issue.refresh_from_db()
+
+        self.assertEqual(
+            self.issue.status,
+            "reported",
         )
 
 
