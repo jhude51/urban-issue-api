@@ -119,6 +119,17 @@ Supported reporter types are citizen and vendor.
 - Development and runtime dependencies separated
 - Docker image build validation in CI
 
+### Container hardening
+
+- Non-root application runtime
+- Reduced runtime image size using a dedicated virtual environment
+- Minimal runtime image contents
+- Graceful Gunicorn process handling with a dedicated entrypoint
+- Application and database health endpoint
+- Docker-native container health checks
+- OCI image metadata for source and version traceability
+- Commit-specific Docker image tags in CI
+
 ---
 
 ## Architecture
@@ -148,9 +159,11 @@ Docker Compose
   |
   +-- django_app
   |     |
-  |     +-- Django REST Framework
-  |     +-- Gunicorn
-  |     +-- Database migrations
+  |     +-- Non-root app user
+  |     +-- Entrypoint applies migrations
+  |     +-- Gunicorn runs as PID 1
+  |     +-- /health/ checks Django + PostgreSQL
+  |     +-- Docker HEALTHCHECK monitors /health/
   |
   +-- postgres_db
         |
@@ -182,7 +195,9 @@ Push to main / Pull request
               +-- Validate OpenAPI schema
               +-- Run automated tests with coverage
               +-- Enforce minimum 95% coverage
-              +-- Build Docker image
+              +-- Build commit-versioned Docker image
+              +-- Embed OCI version and Git revision metadata
+              +-- Verify image metadata
 ```
 
 ---
@@ -722,6 +737,12 @@ The project currently includes a production-oriented foundation, but it should n
 - Docker uses separate builder and runtime stages
 - PostgreSQL readiness is checked before application startup
 - CI validates migrations, checks, tests, and the Docker build
+- Application container runs as a non-root user
+- Runtime image excludes development-only files and dependencies
+- Gunicorn receives container termination signals directly
+- Application health checks verify database connectivity
+- Docker monitors application health at runtime
+- Built images include OCI source, version, and revision metadata
 
 ### Deferred deployment decisions
 
@@ -1171,10 +1192,11 @@ This project has helped me move from simply following tutorials toward understan
 - [ ] Permission tests
 - [x] Test coverage reporting
 - [x] Linting and formatting checks
-- [ ] Container runtime health endpoint
+- [x] Container runtime health endpoint
 
 ### Planned DevOps development
 
+- [x] Build versioned Docker images
 - [ ] Publish versioned Docker images
 - [ ] Deploy the API to Azure
 - [ ] Configure a managed PostgreSQL database
