@@ -29,9 +29,14 @@ RUN groupadd --system app \
 COPY --from=builder /opt/venv /opt/venv
 
 COPY --chown=app:app app ./app
+COPY --chown=app:app docker/entrypoint.sh /entrypoint.sh
+
+RUN chmod +x /entrypoint.sh
 
 USER app
 
 EXPOSE 8000
+
+ENTRYPOINT ["/entrypoint.sh"]
 
 CMD ["gunicorn", "--chdir", "app", "core.wsgi:application", "--bind", "0.0.0.0:8000", "--no-control-socket"]

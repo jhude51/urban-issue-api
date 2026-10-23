@@ -23,11 +23,6 @@ services:
   web:
     build: .
     container_name: django_app
-    command: >
-      sh -c "
-      python app/manage.py migrate && 
-      gunicorn --chdir app core.wsgi:application --bind 0.0.0.0:8000 --no-control-socket
-      "
     ports:
       - "8000:8000"
     depends_on:
