@@ -24,7 +24,10 @@ from drf_spectacular.views import (
 )
 from issues.views import IssueDetail, IssueList
 
+from .views import health_check
+
 urlpatterns = [
+    path("health/", health_check, name="health"),
     path("admin/", admin.site.urls),
     path("api-auth/", include("rest_framework.urls")),
     path(

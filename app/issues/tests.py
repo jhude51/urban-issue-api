@@ -1,8 +1,56 @@
+from unittest.mock import patch
+
+from django.db.utils import OperationalError
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
 from .models import Issue
+
+
+class HealthCheckTest(APITestCase):
+    def test_health_check_returns_healthy_when_database_is_available(self):
+        response = self.client.get(
+            reverse("health"),
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+        self.assertEqual(
+            response.json(),
+            {
+                "status": "healthy",
+                "database": "available",
+            },
+        )
+
+    @patch(
+        "core.views.connection.cursor",
+        side_effect=OperationalError("Database unavailable"),
+    )
+    def test_health_check_returns_unhealthy_when_database_is_unavailable(
+        self,
+        mock_cursor,
+    ):
+        response = self.client.get(
+            reverse("health"),
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+        self.assertEqual(
+            response.json(),
+            {
+                "status": "unhealthy",
+                "database": "unavailable",
+            },
+        )
+
+        mock_cursor.assert_called_once()
 
 
 class IssueAPITest(APITestCase):
