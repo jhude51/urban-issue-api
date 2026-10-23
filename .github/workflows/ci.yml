@@ -114,7 +114,7 @@ jobs:
 
                 VERSION="$(docker image inspect "urban-issue-api:$SHORT_SHA" --format='{{ index .Config.Labels "org.opencontainers.image.version" }}')"
 
-                REVISION="$(docker image inspect urban-issue-api:$SHORT_SHA" --format='{{ index .Config.Labels "org.opencontainers.image.revision" }}')"
+                REVISION="$(docker image inspect "urban-issue-api:$SHORT_SHA" --format='{{ index .Config.Labels "org.opencontainers.image.revision" }}')"
 
                 test "$VERSION" = "$SHORT_SHA"
                 test "$REVISION" = "$GITHUB_SHA"
