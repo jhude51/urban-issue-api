@@ -112,11 +112,16 @@ jobs:
               run: |
                 SHORT_SHA="${GITHUB_SHA::7}"
 
-                docker image inspect \
+                VERSION="$(docker image inspect \"
                   "urban-issue-api:$SHORT_SHA" \
-                  --format='Version: {{ index .Config.Labels "org.opencontainers.image.version" }}'
+                  --format='{{ index .Config.Labels "org.opencontainers.image.version" }}')"
 
-                docker image inspect \
+                REVISION="$(docker image inspect \"
                   "urban-issue-api:$SHORT_SHA" \
-                  --format='Revision: {{ index .Config.Labels "org.opencontainers.image.revision" }}'
-                
+                  --format='{{ index .Config.Labels "org.opencontainers.image.revision" }}')"
+
+                test "$VERSION" = "$SHORT_SHA"
+                test "$REVISION" = "$GITHUB_SHA"
+
+                echo "Image version: $VERSION"
+                echo "Image revision: $REVISION"
