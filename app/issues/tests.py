@@ -708,6 +708,211 @@ class IssueAPITest(APITestCase):
             "reported",
         )
 
+    def test_reject_blank_title(self):
+        payload = {
+            "title": "",
+            "description": "A valid issue description.",
+            "location": "Ibadan",
+            "reporter": "citizen",
+        }
+
+        response = self.client.post(
+            self.list_url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+        self.assertIn("title", response.data)
+
+    def test_reject_whitespace_only_title(self):
+        payload = {
+            "title": "   ",
+            "description": "A valid issue description.",
+            "location": "Ibadan",
+            "reporter": "citizen",
+        }
+
+        response = self.client.post(
+            self.list_url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+        self.assertIn("title", response.data)
+
+    def test_reject_missing_description(self):
+        payload = {
+            "title": "Damaged road surface",
+            "location": "Ibadan",
+            "reporter": "citizen",
+        }
+
+        response = self.client.post(
+            self.list_url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+        self.assertIn("description", response.data)
+
+    def test_reject_missing_location(self):
+        payload = {
+            "title": "Damaged road surface",
+            "description": "Several potholes require repair.",
+            "reporter": "citizen",
+        }
+
+        response = self.client.post(
+            self.list_url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+        self.assertIn("location", response.data)
+
+    def test_reject_invalid_reporter(self):
+        payload = {
+            "title": "Damaged road surface",
+            "description": "Several potholes require repair.",
+            "location": "Ibadan",
+            "reporter": "anonymous",
+        }
+
+        response = self.client.post(
+            self.list_url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+        self.assertIn("reporter", response.data)
+
+    def test_reject_title_longer_than_255_characters(self):
+        payload = {
+            "title": "A" * 256,
+            "description": "A valid issue description.",
+            "location": "Ibadan",
+            "reporter": "citizen",
+        }
+
+        response = self.client.post(
+            self.list_url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+        self.assertIn("title", response.data)
+
+    def test_reject_location_longer_than_255_characters(self):
+        payload = {
+            "title": "Damaged road surface",
+            "description": "A valid issue description.",
+            "location": "A" * 256,
+            "reporter": "citizen",
+        }
+
+        response = self.client.post(
+            self.list_url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+        self.assertIn("location", response.data)
+
+    def test_put_rejects_missing_required_fields(self):
+        payload = {
+            "title": "Updated issue title",
+        }
+
+        response = self.client.put(
+            self.detail_url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+        self.assertIn("description", response.data)
+        self.assertIn("location", response.data)
+
+    def test_reject_invalid_category_filter(self):
+        response = self.client.get(
+            self.list_url,
+            {"category": "invalid_category"},
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+    def test_invalid_page_returns_not_found(self):
+        response = self.client.get(
+            self.list_url,
+            {"page": 999},
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_404_NOT_FOUND,
+        )
+
+    def test_page_size_is_limited_to_maximum(self):
+        issues = [
+            Issue(
+                title=f"Reported issue {number}",
+                description="Testing maximum pagination size.",
+                location="Ibadan",
+                reporter="citizen",
+            )
+            for number in range(55)
+        ]
+
+        Issue.objects.bulk_create(issues)
+
+        response = self.client.get(
+            self.list_url,
+            {"page_size": 100},
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+        self.assertEqual(
+            len(response.data["results"]),
+            50,
+        )
+
 
 class APIDocumentationTest(APITestCase):
     def test_openapi_schema_is_available(self):
