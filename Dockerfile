@@ -1,22 +1,37 @@
 # Stage 1: Builder
 FROM python:3.12-slim AS builder
 
+ENV VIRTUAL_ENV=/opt/venv
+ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
+
 WORKDIR /app
+
+RUN python -m venv "${VIRTUAL_ENV}"
 
 COPY requirements.txt .
 
-RUN pip install --no-cache-dir --user -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
 
 # Stage 2: Runtime
-FROM python:3.12-slim
+FROM python:3.12-slim AS runtime
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    VIRTUAL_ENV=/opt/venv \
+    PATH="/opt/venv/bin:${PATH}"
 
 WORKDIR /app
 
-COPY --from=builder /root/.local /root/.local
-COPY . .
+RUN groupadd --system app \
+    && useradd --system --gid app --no-create-home app
 
-ENV PATH=/root/.local/bin:$PATH
+COPY --from=builder /opt/venv /opt/venv
+
+COPY --chown=app:app app ./app
+
+USER app
 
 EXPOSE 8000
 
-CMD ["gunicorn", "--chdir", "app", "core.wsgi:application", "--bind", "0.0.0.0:8000"]
+CMD ["gunicorn", "--chdir", "app", "core.wsgi:application", "--bind", "0.0.0.0:8000", "--no-control-socket"]

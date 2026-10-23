@@ -1,6 +1,30 @@
+# Python virtual environments
+.venv/
 venv/
+
+# Python-generated files
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+
+# Test and coverage artefacts
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local configuration and generated files
 .env
-.git
+schema.yml
+
+# Version control
+.git/
 .gitignore
+
+# Development-only files
+requirements-dev.txt
+.coveragerc
+pyproject.toml
+
+# CI and documentation
+.github/
+README.md
