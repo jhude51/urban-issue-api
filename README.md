@@ -16,7 +16,7 @@ The API foundation, issue-management functionality, documentation, and automated
 
 The project also includes automated API and edge-case testing, Ruff linting and formatting, application coverage measurement, OpenAPI schema validation, and Docker image validation through GitHub Actions.
 
-The project has not yet been deployed to Azure. Cloud deployment, managed PostgreSQL, infrastructure automation, observability, and runtime hardening remain planned.
+The project has not yet been deployed to Azure. Cloud deployment, managed PostgreSQL, infrastructure automation, observability, and alerting remain planned.
 
 ---
 
@@ -130,6 +130,17 @@ Supported reporter types are citizen and vendor.
 - OCI image metadata for source and version traceability
 - Commit-specific Docker image tags in CI
 
+### CI/CD and artifact delivery
+
+- Quality-gated pull request workflow
+- Automated container publishing after successful merges to `main`
+- GitHub Container Registry integration
+- Commit-specific image tags
+- `latest` image tag for the newest successful `main` build
+- OCI version and Git revision metadata
+- Immutable SHA-256 deployment references
+- Registry artifact verification after publishing
+
 ---
 
 ## Architecture
@@ -177,28 +188,34 @@ The Django container waits until PostgreSQL reports a healthy state before migra
 ### CI workflow
 
 ```text
-Push to main / Pull request
-              |
-              v
-        GitHub Actions
-              |
-              +-- Check out source code
-              +-- Set up Python 3.12
-              +-- Restore pip dependency cache
-              +-- Install development dependencies
-              +-- Run Ruff linting
-              +-- Validate Ruff formatting
-              +-- Start PostgreSQL service
-              +-- Wait for database readiness
-              +-- Apply migrations
-              +-- Run Django system checks
-              +-- Validate OpenAPI schema
-              +-- Run automated tests with coverage
-              +-- Enforce minimum 95% coverage
-              +-- Build commit-versioned Docker image
-              +-- Embed OCI version and Git revision metadata
-              +-- Verify image metadata
-```
+Pull request
+    |
+    v
+Build / quality job
+    |
+    +-- Ruff linting and formatting
+    +-- PostgreSQL
+    +-- Django checks
+    +-- OpenAPI validation
+    +-- Tests and coverage
+    +-- Docker build validation
+
+Merge to main
+    |
+    v
+Build / quality job
+    |
+    v
+Publish container image
+    |
+    +-- Authenticate to GHCR
+    +-- Build release image
+    +-- Tag with commit SHA
+    +-- Tag as latest
+    +-- Push to GHCR
+    +-- Capture registry digest
+    +-- Pull and verify immutable image
+    +-- Publish release summary```
 
 ---
 
@@ -217,6 +234,7 @@ Push to main / Pull request
 | Local orchestration | Docker Compose |
 | Continuous integration | GitHub Actions |
 | Version control | Git and GitHub |
+| Container registry | GitHub Container Registry |
 
 ---
 
@@ -763,6 +781,36 @@ The following will be finalised during cloud deployment:
 
 ---
 
+## Container Registry
+
+Successful merges to `main` publish the application image to GitHub Container Registry:
+
+```text
+ghcr.io/jhude51/urban-issue-api
+```
+
+Published images receive:
+
+- a commit-specific tag, such as 1ba42be
+- the mutable latest tag
+- an immutable registry digest
+
+Pull a specific version:
+
+```bash
+docker pull ghcr.io/jhude51/urban-issue-api:1ba42be
+```
+
+For production deployment, the immutable digest is preferred:
+
+```text
+ghcr.io/jhude51/urban-issue-api@sha256:<digest>
+```
+
+This ensures the deployed container refers to the exact artifact produced and verified by CI/CD.
+
+---
+
 ## Key Engineering Decisions
 
 ### PostgreSQL instead of SQLite
@@ -1197,7 +1245,7 @@ This project has helped me move from simply following tutorials toward understan
 ### Planned DevOps development
 
 - [x] Build versioned Docker images
-- [ ] Publish versioned Docker images
+- [x] Publish versioned Docker images
 - [ ] Deploy the API to Azure
 - [ ] Configure a managed PostgreSQL database
 - [ ] Add deployment automation
