@@ -125,6 +125,10 @@ jobs:
     publish:
         name: Publish container image
         needs: build
+        outputs:
+            image_name: ${{ steps.image.outputs.image_name }}
+            image_digest: ${{ steps.digest.outputs.digest }}
+            image_ref: ${{ steps.digest.outputs.image_ref }}
 
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
@@ -175,7 +179,54 @@ jobs:
                 docker push \
                   "${{ steps.image.outputs.image_name }}:latest"
 
-            - name: Verify published image
+            - name: Capture published image digest
+              id: digest
               run: |
-                docker buildx imagetools inspect \
-                  "${{ steps.image.outputs.image_name }}:${{ steps.image.outputs.short_sha }}"
+                IMAGE="${{ steps.image.outputs.image_name }}:${{ steps.image.outputs.short_sha }}"
+
+                DIGEST="$(docker buildx imagetools inspect "$IMAGE" \
+                  | awk '/^Digest:/ {print $2; exit}')"
+
+                if [[ ! "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+                  echo "Invalid image digest: $DIGEST"
+                  exit 1
+                fi
+
+                IMAGE_REF="${{ steps.image.outputs.image_name }}@$DIGEST"
+
+                echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
+                echo "image_ref=$IMAGE_REF" >> "$GITHUB_OUTPUT"
+
+                echo "Published digest: $DIGEST"
+                echo "Immutable image: $IMAGE_REF"
+
+            - name: Verify immutable image reference
+              run: |
+                IMAGE_REF="${{ steps.digest.outputs.image_ref }}"
+
+                docker pull "$IMAGE_REF"
+
+                VERSION="$(docker image inspect "$IMAGE_REF" \
+                  --format='{{ index .Config.Labels "org.opencontainers.image.version" }}')"
+
+                REVISION="$(docker image inspect "$IMAGE_REF" \
+                  --format='{{ index .Config.Labels "org.opencontainers.image.revision" }}')"
+
+                test "$VERSION" = "${{ steps.image.outputs.short_sha }}"
+                test "$REVISION" = "$GITHUB_SHA"
+
+                echo "Immutable image verified successfully."
+
+            - name: Publish release summary
+              run: |
+                {
+                  echo "### Published container image"
+                  echo ""
+                  echo "- **Repository:** \`${{ steps.image.outputs.image_name }}\`"
+                  echo "- **Version tag:** \`${{ steps.image.outputs.short_sha }}\`"
+                  echo "- **Latest tag:** \`latest\`"
+                  echo "- **Digest:** \`${{ steps.digest.outputs.digest }}\`"
+                  echo "- **Immutable reference:**"
+                  echo ""
+                  echo "\`${{ steps.digest.outputs.image_ref }}\`"
+                } >> "$GITHUB_STEP_SUMMARY"
