@@ -69,6 +69,16 @@ SECURE_HSTS_PRELOAD = config(
     cast=bool,
 )
 
+TRUST_X_FORWARDED_PROTO = config(
+    "TRUST_X_FORWARDED_PROTO",
+    default=False,
+    cast=bool,
+)
+
+SECURE_PROXY_SSL_HEADER = (
+    ("HTTP_X_FORWARDED_PROTO", "https") if TRUST_X_FORWARDED_PROTO else None
+)
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -117,6 +127,11 @@ WSGI_APPLICATION = "core.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
+DB_SSLMODE = config(
+    "DB_SSLMODE",
+    default="prefer",
+)
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -125,6 +140,9 @@ DATABASES = {
         "PASSWORD": config("DB_PASSWORD"),
         "HOST": config("DB_HOST"),
         "PORT": config("DB_PORT"),
+        "OPTIONS": {
+            "sslmode": DB_SSLMODE,
+        },
     }
 }
 
