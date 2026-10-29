@@ -230,3 +230,103 @@ jobs:
                   echo ""
                   echo "\`${{ steps.digest.outputs.image_ref }}\`"
                 } >> "$GITHUB_STEP_SUMMARY"
+
+    deploy:
+        name: Deploy to Azure
+        needs: publish
+
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+        runs-on: ubuntu-latest
+
+        permissions:
+            contents: read
+            id-token: write
+
+        env:
+            AZURE_CORE_OUTPUT: none
+            RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+            WEBAPP_NAME: ${{ vars.AZURE_WEBAPP_NAME }}
+
+        steps:
+            - name: Log in to Azure with OIDC
+              uses: azure/login@v3
+              with:
+                  client-id: ${{ secrets.AZURE_CLIENT_ID }}
+                  tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+                  subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+            - name: Deploy immutable container image
+              run: |
+                  IMAGE_REF="${{ needs.publish.outputs.image_ref }}"
+
+                  az webapp config container set \
+                    --resource-group "$RESOURCE_GROUP" \
+                    --name "$WEBAPP_NAME" \
+                    --container-image-name "$IMAGE_REF"
+
+                  echo "Deployed image: $IMAGE_REF"
+
+            - name: Restart Azure Web App
+              run: |
+                  az webapp restart \
+                    --resource-group "$RESOURCE_GROUP" \
+                    --name "$WEBAPP_NAME"
+
+            - name: Verify deployed image configuration
+              run: |
+                  EXPECTED_IMAGE="${{ needs.publish.outputs.image_ref }}"
+
+                  DEPLOYED_CONFIG="$(az webapp config show \
+                    --resource-group "$RESOURCE_GROUP" \
+                    --name "$WEBAPP_NAME" \
+                    --query linuxFxVersion \
+                    --output tsv)"
+
+                  echo "Azure container configuration: $DEPLOYED_CONFIG"
+
+                  if [[ "$DEPLOYED_CONFIG" != *"$EXPECTED_IMAGE"* ]]; then
+                    echo "Expected image was not found in Azure configuration."
+                    exit 1
+                  fi
+
+            - name: Verify production health
+              run: |
+                  HEALTH_URL="https://${WEBAPP_NAME}.azurewebsites.net/health/"
+                  BODY_FILE="/tmp/health.json"
+
+                  for ATTEMPT in {1..30}; do
+                    HTTP_CODE="$(curl \
+                      --silent \
+                      --show-error \
+                      --output "$BODY_FILE" \
+                      --write-out "%{http_code}" \
+                      "$HEALTH_URL" || true)"
+
+                    if [[ "$HTTP_CODE" == "200" ]] \
+                      && grep -q '"status": *"healthy"' "$BODY_FILE" \
+                      && grep -q '"database": *"available"' "$BODY_FILE"; then
+                        echo "Production health check passed."
+                        cat "$BODY_FILE"
+                        exit 0
+                    fi
+
+                    echo "Attempt $ATTEMPT/30: application not ready (HTTP $HTTP_CODE)."
+                    sleep 10
+                  done
+
+                  echo "Production health check failed."
+                  cat "$BODY_FILE" || true
+                  exit 1
+
+            - name: Publish deployment summary
+              if: success()
+              run: |
+                  {
+                    echo "### Azure deployment"
+                    echo ""
+                    echo "- **Web App:** \`${WEBAPP_NAME}\`"
+                    echo "- **Image:** \`${{ needs.publish.outputs.image_ref }}\`"
+                    echo "- **Health:** ✅ Healthy"
+                    echo "- **URL:** https://${WEBAPP_NAME}.azurewebsites.net"
+                  } >> "$GITHUB_STEP_SUMMARY"
