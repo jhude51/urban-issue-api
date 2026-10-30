@@ -16,7 +16,7 @@ The API foundation, issue-management functionality, documentation, and automated
 
 The project also includes automated API and edge-case testing, Ruff linting and formatting, application coverage measurement, OpenAPI schema validation, and Docker image validation through GitHub Actions.
 
-The project has not yet been deployed to Azure. Cloud deployment, managed PostgreSQL, infrastructure automation, observability, and alerting remain planned.
+The project has been deployed to Azure. Infrastructure-as-Code, observability, alerting, and operational documentation remain planned.
 
 ---
 
@@ -811,6 +811,55 @@ This ensures the deployed container refers to the exact artifact produced and ve
 
 ---
 
+## Live Deployment
+
+The API is deployed on Azure App Service and backed by Azure Database for PostgreSQL Flexible Server.
+
+- API: `https://urban-issue-api-3cfd84.azurewebsites.net/issues/`
+- Health: `https://urban-issue-api-3cfd84.azurewebsites.net/health/`
+
+### Cloud Architecture
+
+```text
+GitHub Repository
+       |
+       v
+GitHub Actions
+       |
+       +-- Lint / Format
+       +-- Tests / Coverage
+       +-- OpenAPI validation
+       +-- Docker validation
+       |
+       v
+GitHub Container Registry
+       |
+       | immutable SHA-256 digest
+       v
+Azure App Service
+       |
+       | TLS-encrypted PostgreSQL connection
+       v
+Azure Database for PostgreSQL
+Flexible Server
+```
+
+### Deployment and Security Controls
+
+The project now uses:
+
+- GitHub Actions OIDC authentication to Azure
+- no Azure client secret or publish profile
+- user-assigned managed identity
+- `Website Contributor` scoped to the individual Web App
+- immutable container digests for deployments
+- PostgreSQL TLS
+- PostgreSQL firewall restricted to App Service outbound IPs
+- Django proxy-aware HTTPS handling
+- automatic migrations at container startup
+- post-deployment `/health/` verification
+- non-root application container
+
 ## Key Engineering Decisions
 
 ### PostgreSQL instead of SQLite
@@ -1215,7 +1264,19 @@ This project has helped me move from simply following tutorials toward understan
 - [x] GitHub Actions CI
 - [x] Automated migrations and system checks
 - [x] Automated Docker build validation
-- [x] Production deployment assessment
+- [x] Build versioned Docker images
+- [x] Publish images to GitHub Container Registry
+- [x] Deploy API to Azure App Service
+- [x] Configure Azure Database for PostgreSQL
+- [x] Configure automated deployment
+- [x] Use passwordless GitHub → Azure OIDC authentication
+- [x] Add post-deployment health verification
+- [ ] Provision infrastructure with Terraform
+- [ ] Add structured production logging
+- [ ] Add monitoring and observability
+- [ ] Add alerting
+- [ ] Create operational runbook
+- [ ] Evaluate Kubernetes deployment
 
 ### Planned API development
 
